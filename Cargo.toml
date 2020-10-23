@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "politeia",
+    "politeia-api",
+]
