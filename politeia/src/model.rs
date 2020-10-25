@@ -32,9 +32,9 @@ impl Client {
     async fn get_request(&self, url: String) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let response = self.client.get(&url).send().await?;
         match response.error_for_status() {
-            Ok(res) => return Ok(res.bytes().await?.to_vec()),
+            Ok(res) => Ok(res.bytes().await?.to_vec()),
 
-            Err(e) => return Err(e.into()),
+            Err(e) => Err(e.into()),
         }
     }
 
@@ -59,9 +59,9 @@ impl Client {
             .await?;
 
         match response.error_for_status() {
-            Ok(res) => return Ok(res.bytes().await?.to_vec()),
+            Ok(res) => Ok(res.bytes().await?.to_vec()),
 
-            Err(e) => return Err(e.into()),
+            Err(e) => Err(e.into()),
         }
     }
 
@@ -159,7 +159,7 @@ impl Client {
         tokens: &mut Vec<String>,
         proposals: &mut api::v1::types::ProposalsResult,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        while tokens.len() > 0 {
+        while !tokens.is_empty() {
             let split_at = if (tokens.len() as i64 - self.policy.proposal_list_page_size as i64) < 0
             {
                 tokens.len() - 1
@@ -170,9 +170,9 @@ impl Client {
             let a = self
                 .fetch_batch_proposal(tokens.split_off(split_at))
                 .await?;
-            let mut iter = a.proposals.iter();
+            let iter = a.proposals.iter();
 
-            while let Some(prop) = iter.next() {
+            for prop in iter {
                 proposals.proposals.push(prop.clone())
             }
         }
