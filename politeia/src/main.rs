@@ -1,13 +1,15 @@
 pub mod model;
+mod server;
 mod types;
 
-#[tokio::main]
+use actix_web::{App, HttpServer};
+
+#[actix_web::main]
 async fn main() {
-    let mut client = model::new().expect("Unable to create a new reqwest client");
-
-    let tokens = client.fetch_tokens().await.expect("Unable to fetch tokens");
-
-    let proposals = client.fetch_all_proposals(tokens).await;
-
-    println!("{}", proposals.unwrap().pre.proposals.len())
+    HttpServer::new(|| App::new().service(server::index))
+        .bind("127.0.0.1:8080")
+        .unwrap()
+        .run()
+        .await
+        .unwrap();
 }

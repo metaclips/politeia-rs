@@ -4,45 +4,75 @@ on:
     push:
         branches:
             - master
-  
     pull_request:
         branches: 
             - master
-jobs:  
+jobs:
+    templates:
+        name: build templates
+        runs-on: ubuntu-latest
+        steps:
+        -   name: checkout
+            uses: actions/checkout@v2
+        
+        -   name: npm
+            uses: actions/setup-node@v1
+            with:
+                node-versiona: 12.x
+
+        -   name: npm install and build
+            run: |
+                cd politeia/templates
+                npm install
+                npm run build
+
+        -   name: Archive production artifacts
+            uses: actions/upload-artifact@v2
+            with:
+                name: dist
+                path: |
+                    .
+                    !politeia/templates/node_modules
+
     check:
         name: cargo check
         runs-on: ubuntu-latest
+        needs: templates
         steps:
-            -   name: checkout
-                uses: actions/checkout@v2
-            
-            -   name: cargo check
-                uses: actions-rs/cargo@v1
-                with:
-                    command: check
-                    args: --release
+        -   name: Download a single artifact
+            uses: actions/download-artifact@v2
+            with:
+                name: dist
 
-            -   name: cargo clippy
-                uses: actions-rs/clippy-check@v1
-                with:
-                    token: ${{ secrets.GITHUB_TOKEN }}
-                    args: --all-features
+        -   name: cargo check
+            uses: actions-rs/cargo@v1
+            with:
+                command: check
+                args: --release
 
-            -   name: cargo fmt
-                uses: actions-rs/cargo@v1
-                with:
-                    command: fmt
-                    args: --all -- --check
+        -   name: cargo clippy
+            uses: actions-rs/clippy-check@v1
+            with:
+                token: ${{ secrets.GITHUB_TOKEN }}
+                args: --all-features
 
+        -   name: cargo fmt
+            uses: actions-rs/cargo@v1
+            with:
+                command: fmt
+                args: --all -- --check
     test:
         name: cargo test
         runs-on: ubuntu-latest
+        needs: templates
         steps:
-            -   name: checkout
-                uses: actions/checkout@v2
+        -   name: Download Vue dist artifact
+            uses: actions/download-artifact@v2
+            with:
+                name: dist
 
-            -   name: cargo test
-                uses: actions-rs/cargo@v1
-                with:
-                    command: test
-                    args: --release -- --nocapture
+        -   name: cargo test
+            uses: actions-rs/cargo@v1
+            with:
+                command: test
+                args: --release -- --nocapture
