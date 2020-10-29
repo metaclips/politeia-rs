@@ -4,7 +4,6 @@ pub struct Client {
     client: reqwest::Client,
 
     csrf_token: String,
-    csrf_expiry: std::time::Instant,
 
     pub policy: api::v1::types::Policy,
 }
@@ -13,15 +12,12 @@ const CSRF_TOKEN: &str = "X-CSRF-Token";
 
 pub fn new() -> Result<Client, Box<dyn std::error::Error>> {
     let req_client = reqwest::ClientBuilder::default()
-        .cookie_store(true)
-        .cookie_store(true)
         .connection_verbose(true)
         .build()?;
 
     let client = Client {
         client: req_client,
         csrf_token: String::new(),
-        csrf_expiry: std::time::Instant::now(),
         policy: api::v1::types::Policy::default(),
     };
 
@@ -43,12 +39,8 @@ impl Client {
         url: String,
         params: Vec<u8>,
     ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        if self.csrf_token == ""
-            || self.csrf_expiry.elapsed() > std::time::Duration::from_secs(20 * 60 * 60)
-        {
-            self.version().await?;
-            self.policy = self.fetch_policy().await?;
-        }
+        self.version().await?;
+        self.policy = self.fetch_policy().await?;
 
         let response = self
             .client
