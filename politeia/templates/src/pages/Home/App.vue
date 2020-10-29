@@ -1,14 +1,22 @@
 <template>
-  <div>
-    <h1>Home Page</h1>
+  <div id="app">
+    <img alt="Vue logo" src="@/assets/logo.png" />
+    <HelloWorld msg="Shit and bants" />
   </div>
 </template>
 
-<script>
-export default {
-  name: "App",
-  components: {},
-};
+<script lang="ts">
+import Vue from "vue";
+
+export default Vue.extend({
+  name: "Home",
+  components: {
+    HelloWorld: () =>
+      import(
+        /* webpackChunkName: 'hello-world' */ "@/components/HelloWorld.vue"
+      ),
+  },
+});
 </script>
 
 <style>
