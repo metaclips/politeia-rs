@@ -10,4 +10,3 @@ pub struct Proposals {
     pub unreviewed: types::ProposalsResult,
     pub rejected: types::ProposalsResult,
 }
-

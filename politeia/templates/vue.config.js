@@ -1,17 +1,15 @@
 module.exports = {
-  "pages": {
-    "home": {
-      "entry": "./src/pages/Home/main.ts",
-      "template": "public/index.html",
-      "title": "Home"
+  pages: {
+    home: {
+      entry: "./src/pages/Home/main.ts",
+      template: "public/index.html",
+      title: "Home"
     },
-    "proposal": {
-      "entry": "./src/pages/Proposal/main.ts",
-      "template": "public/index.html",
-      "title": "Proposals"
+    proposal: {
+      entry: "./src/pages/Proposal/main.ts",
+      template: "public/index.html",
+      title: "Proposals"
     }
   },
-  "transpileDependencies": [
-    "vuetify"
-  ]
-}
+  transpileDependencies: ["vuetify"]
+};
