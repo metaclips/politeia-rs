@@ -1,0 +1,5 @@
+/release*
+Cargo.lock
+*.log
+*.txt
+*.json
