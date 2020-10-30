@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_files::{Files as fs, NamedFile};
 use actix_web::{get, http::StatusCode, post, web, App, HttpServer, Responder, Result};
 use askama_actix::{Template, TemplateIntoResponse};
@@ -11,8 +12,13 @@ async fn favicon() -> Result<NamedFile> {
 }
 
 pub async fn start_server() -> std::io::Result<()> {
-    HttpServer::new(move || {
+    HttpServer::new(|| {
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allowed_methods(vec!["GET", "POST"]);
+
         App::new()
+            .wrap(cors)
             .service(index)
             .service(fetch_tokens)
             .service(fetch_proposals)
@@ -37,7 +43,17 @@ async fn fetch_tokens() -> impl Responder {
     let client = super::model::new().expect("Unable to create a new client");
 
     match client.fetch_tokens().await {
-        Ok(e) => format!("{:#?}", e).with_status(StatusCode::OK),
+        Ok(e) => match serde_json::to_string(&e) {
+            Ok(e) => e.with_status(StatusCode::OK),
+
+            Err(e) => {
+                log::error!("Error marshalling token inventory struct, error: {}", e);
+
+                "Error marshalling tokens"
+                    .to_string()
+                    .with_status(StatusCode::INTERNAL_SERVER_ERROR)
+            }
+        },
 
         Err(e) => {
             log::error!("Error fetching proposal tokens, error: {}", e);

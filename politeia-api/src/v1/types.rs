@@ -80,7 +80,7 @@ pub struct VoteStatusResult {
 }
 
 /// Retrieve the censorship record tokens of all proposals in the inventory.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct TokenInventory {
     /// Tokens of all vetted proposals that are pre-vote/in-discussion.
