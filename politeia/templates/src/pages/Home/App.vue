@@ -1,64 +1,33 @@
 <template>
-  <v-app>
-    <v-app-bar flat app>
-      <!-- <div class="d-flex align-center">
-        <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
-          transition="scale-transition"
-          width="40"
-        />
-
-        <v-img
-          alt="Vuetify Name"
-          class="shrink mt-1 hidden-sm-and-down"
-          contain
-          min-width="100"
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-name-dark.png"
-          width="100"
-        />
-      </div>
-
-      <v-spacer></v-spacer>
-
-      <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-        text
-      >
-        <span class="mr-2">Latest Release</span>
-        <v-icon>mdi-open-in-new</v-icon>
-      </v-btn> -->
-      <v-spacer></v-spacer>
-      <v-img
-        alt="Politea Logo"
-        class="shrink mr-2"
-        contain
-        :src="require('../../assets/logo.svg')"
-        transition="scale-transition"
-      />
-
-      <v-spacer></v-spacer>
-    </v-app-bar>
-
-    <v-main>
-      <HelloWorld />
-    </v-main>
-  </v-app>
+  <div id="app">
+    <img alt="Vue logo" src="./assets/logo.png" />
+    <HelloWorld msg="Welcome to Your Vue.js + TypeScript App" />
+  </div>
 </template>
 
 <script lang="ts">
-import Vue from "vue";
+import { Component, Vue } from "vue-property-decorator";
+import HelloWorld from "../../components/HelloWorld.vue";
 
-export default Vue.extend({
-  name: "App",
+@Component({
+  components: {
+    HelloWorld
+  }
+})
+export default class App extends Vue {
+  public clickMe(): void {}
 
-  components: {},
-
-  data: () => ({
-    switch: false,
-  }),
-});
+  private msg: string = "welcome to my app";
+}
 </script>
+
+<style lang="scss">
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+</style>
