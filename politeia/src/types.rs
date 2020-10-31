@@ -10,3 +10,8 @@ pub struct Proposals {
     pub unreviewed: types::ProposalsResult,
     pub rejected: types::ProposalsResult,
 }
+
+#[derive(serde::Deserialize, Debug)]
+pub struct Tokens {
+    pub tokens: Vec<String>,
+}

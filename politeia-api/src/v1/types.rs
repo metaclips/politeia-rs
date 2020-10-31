@@ -4,7 +4,7 @@
 /// This call shall ALWAYS be the first contact with the server.
 /// This is done in order to get the CSRF token for the session
 /// and to ensure API compatibility.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct Version {
     pub version: String,
@@ -17,7 +17,7 @@ pub struct Version {
 }
 
 /// Describes a single vote option.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct VoteOption {
     /// Single unique word identifying vote (e.g. yes)
@@ -29,7 +29,7 @@ pub struct VoteOption {
 }
 
 /// Describes a [VotingOption] along with the number of votes it has received.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct VoteOptionResult {
     /// Vote Option.
@@ -40,7 +40,7 @@ pub struct VoteOptionResult {
 }
 
 /// Describes the vote status for a given proposal.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct VoteStatus {
     /// Token that identifies vote.
@@ -72,7 +72,7 @@ pub struct VoteStatus {
 
 /// Returns the [VoteStatus] of all public proposals.
 #[deprecated = "This type has been deprecated, use Batch Vote type"]
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct VoteStatusResult {
     #[serde(rename = "votesstatus")]
@@ -100,7 +100,7 @@ pub struct TokenInventory {
 }
 
 /// Describes an individual file that is part of the proposal.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct File {
     /// File name.
@@ -114,7 +114,7 @@ pub struct File {
 }
 
 /// Describes user specified metadata.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct Metadata {
     /// SHA256 digest of JSON encoded payload.
@@ -127,7 +127,7 @@ pub struct Metadata {
 
 /// Contains the proof that a proposal was accepted for review.
 /// The proof is verifiable on the client side.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct CensorshipRecord {
     /// Censorship token.
@@ -139,7 +139,7 @@ pub struct CensorshipRecord {
 }
 
 /// Politeia proposals.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct Proposal {
     /// Short proposal name.
@@ -195,7 +195,7 @@ pub struct Proposal {
 }
 
 /// Returns all Politeia [Proposal]s.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct ProposalsResult {
     pub proposals: Vec<Proposal>,
@@ -204,7 +204,7 @@ pub struct ProposalsResult {
 /// Retrieve server policy.
 ///
 /// The returned values contain various maxima that the client SHALL observe.
-#[derive(serde::Deserialize, Default, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct Policy {
     /// Minimum number of characters accepted for user passwords.

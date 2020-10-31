@@ -1,6 +1,9 @@
+use super::types;
 use actix_cors::Cors;
 use actix_files::{Files as fs, NamedFile};
-use actix_web::{get, http::StatusCode, post, web, App, HttpServer, Responder, Result};
+use actix_web::{
+    get, http::header, http::StatusCode, post, web, App, HttpServer, Responder, Result,
+};
 use askama_actix::{Template, TemplateIntoResponse};
 
 #[derive(Template)]
@@ -20,6 +23,7 @@ pub async fn start_server() -> std::io::Result<()> {
     HttpServer::new(|| {
         let cors = Cors::default()
             .allow_any_origin()
+            .allowed_header(header::CONTENT_TYPE)
             .allowed_methods(vec!["GET", "POST"]);
 
         App::new()
@@ -71,15 +75,25 @@ async fn fetch_tokens() -> impl Responder {
 }
 
 #[post("/api/v1/fetchproposals")]
-async fn fetch_proposals(tokens: web::Form<Vec<String>>) -> impl Responder {
+async fn fetch_proposals(tokens: actix_web::web::Json<types::Tokens>) -> impl Responder {
     let mut client = super::model::new().expect("Unable to create a new client");
 
-    if tokens.len() == 0 {
+    if tokens.tokens.is_empty() {
         return "{}".to_string().with_status(StatusCode::OK);
     }
 
-    match client.fetch_batch_proposal(tokens.0).await {
-        Ok(e) => format!("{:#?}", e).with_status(StatusCode::OK),
+    match client.fetch_batch_proposal(tokens.tokens.clone()).await {
+        Ok(e) => match serde_json::to_string(&e) {
+            Ok(e) => e.with_status(StatusCode::OK),
+
+            Err(e) => {
+                log::error!("Error marshalling proposal result struct, error: {}", e);
+
+                "Error marshalling proposals"
+                    .to_string()
+                    .with_status(StatusCode::INTERNAL_SERVER_ERROR)
+            }
+        },
 
         Err(e) => {
             log::error!("Error fetching proposals, error: {}", e);

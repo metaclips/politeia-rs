@@ -13,6 +13,7 @@ const CSRF_TOKEN: &str = "X-CSRF-Token";
 pub fn new() -> Result<Client, Box<dyn std::error::Error>> {
     let req_client = reqwest::ClientBuilder::default()
         .connection_verbose(true)
+        .cookie_store(true)
         .build()?;
 
     let client = Client {

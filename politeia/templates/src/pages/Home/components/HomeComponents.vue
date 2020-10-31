@@ -1,18 +1,21 @@
 <template>
-  <v-row class="mx-10" no-gutters>
+  <v-row no-gutters class="mx-8">
     <v-col class="mb-10" cols="12">
       <h5 class="header">
         Public Proposals
       </h5>
     </v-col>
 
-    <v-col v-if="Object.keys(proposals).length" cols="8">
-      <v-tabs v-model="tab" align-with-title grow mobile-breakpoint="3">
-        <v-tab>In Discussion [{{ proposals["pre"].length }}]</v-tab>
-        <v-tab>Voting [{{ proposals["active"].length }}]</v-tab>
-        <v-tab>Approved [{{ proposals["approved"].length }}]</v-tab>
-        <v-tab>Rejected [{{ proposals["rejected"].length }}]</v-tab>
-        <v-tab>Abandoned [{{ proposals["abandoned"].length }}]</v-tab>
+    <v-col
+      v-if="Object.keys(proposalTokens).length"
+      :cols="$vuetify.breakpoint.smAndDown ? '12' : '8'"
+    >
+      <v-tabs v-model="tab" align-with-title grow show-arrows>
+        <v-tab>In Discussion [{{ proposalTokens["pre"].length }}]</v-tab>
+        <v-tab>Voting [{{ proposalTokens["active"].length }}]</v-tab>
+        <v-tab>Approved [{{ proposalTokens["approved"].length }}]</v-tab>
+        <v-tab>Rejected [{{ proposalTokens["rejected"].length }}]</v-tab>
+        <v-tab>Abandoned [{{ proposalTokens["abandoned"].length }}]</v-tab>
       </v-tabs>
 
       <v-tabs-items v-model="tab">
@@ -21,7 +24,7 @@
             class="align-center my-10"
             align="center"
             justify="center"
-            v-if="proposals[proposalType].length == 0"
+            v-if="proposalTokens[proposalType].length == 0"
           >
             <span>No proposal under discussion</span>
           </div>
@@ -34,11 +37,14 @@
 </template>
 
 <script lang="ts">
+"use strict";
+
 import { Component, Vue, Watch } from "vue-property-decorator";
 import Axios from "axios";
 
 @Component
 export default class HomeComponents extends Vue {
+  private proposalTokens: Record<string, []> = {};
   private proposals: Record<string, []> = {};
   private proposalTypes: Record<number, string> = {
     0: "pre",
@@ -51,22 +57,50 @@ export default class HomeComponents extends Vue {
   private tab = 0;
 
   @Watch("tab")
-  fetchTokens() {
+  fetchProposalFromToken() {
     console.log("Tab is at", this.tab);
-
     console.log(
       "Fetching tokens for ",
       this.proposalTypes[this.tab],
       "\n",
-      this.proposals[this.proposalTypes[this.tab]]
+      this.proposalTokens[this.proposalTypes[this.tab]]
     );
+
+    const proposalType = this.proposalTypes[this.tab];
+
+    if (
+      this.proposals[proposalType] == undefined &&
+      this.proposalTokens[proposalType].length > 0
+    ) {
+      const tokensValue = this.proposalTokens[proposalType];
+      // Fetch tokens
+      Axios.post(
+        process.env.VUE_APP_BACKEND_SERVER + "/api/v1/fetchproposals",
+        JSON.stringify({ tokens: tokensValue }),
+        {
+          headers: {
+            // Overwrite Axios's automatically set Content-Type
+            "Content-Type": "application/json"
+          }
+        }
+      )
+        .then(Response => {
+          if (Response.status == 200) {
+            console.log("proposal", Response.data);
+          }
+        })
+        .catch(error => {
+          console.log("Error fetching proposals", error);
+        });
+    }
   }
 
   mounted() {
+    console.log("Sending fetch tokens");
     Axios.get(process.env.VUE_APP_BACKEND_SERVER + "/api/v1/fetchtokens")
       .then(Response => {
         if (Response.status == 200) {
-          this.proposals = Response.data;
+          this.proposalTokens = Response.data;
         }
       })
       .catch(errror => {
