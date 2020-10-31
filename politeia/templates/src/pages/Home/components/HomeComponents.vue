@@ -63,7 +63,7 @@ export default class HomeComponents extends Vue {
   }
 
   mounted() {
-    Axios.get("http://127.0.0.1:8080/api/v1/fetchtokens")
+    Axios.get(process.env.VUE_APP_BACKEND_SERVER + "/api/v1/fetchtokens")
       .then(Response => {
         if (Response.status == 200) {
           this.proposals = Response.data;

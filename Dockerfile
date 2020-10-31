@@ -1,4 +1,4 @@
-FROM node:15.0.1-alpine3.10
+FROM node:latest
 
 WORKDIR /web
 
@@ -8,20 +8,18 @@ COPY . .
 
 RUN  cd politeia/templates && npm install && npm run build
 
-RUN cd ../
-
 FROM rust:latest
 
 WORKDIR /web
 
-COPY --from=0 /web .
-
-RUN cd ./politeia
-
-RUN cargo build --release  --package politeia --bin politeia --target-dir .
-
 ENV PORT=8080
+
+ENV VUE_APP_BACKEND_SERVER=http://127.0.0.1:8080
 
 EXPOSE 8080
 
-ENTRYPOINT ./release/politeia 
+COPY --from=0 /web .
+
+RUN cargo build --release  --package politeia --bin politeia --target-dir .
+
+ENTRYPOINT ./release/politeia

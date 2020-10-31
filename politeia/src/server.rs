@@ -12,6 +12,11 @@ async fn favicon() -> Result<NamedFile> {
 }
 
 pub async fn start_server() -> std::io::Result<()> {
+    let port = std::env::var("PORT").expect("Port env not set.");
+    if port == "" {
+        panic!("Port env is an empty string");
+    }
+
     HttpServer::new(|| {
         let cors = Cors::default()
             .allow_any_origin()
@@ -27,7 +32,7 @@ pub async fn start_server() -> std::io::Result<()> {
             .service(fs::new("/js", "politeia/templates/dist/js"))
             .service(fs::new("/img", "politeia/templates/dist/img"))
     })
-    .bind("127.0.0.1:8080")?
+    .bind(format!("0.0.0.0:{}", port))?
     .run()
     .await
 }
