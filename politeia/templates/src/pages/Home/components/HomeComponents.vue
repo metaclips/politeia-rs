@@ -20,18 +20,44 @@
 
       <v-tabs-items v-model="tab">
         <v-tab-item v-for="(proposalType, index) in proposalTypes" :key="index">
-          <div
+          <v-row
             class="align-center my-10"
             align="center"
             justify="center"
             v-if="proposalTokens[proposalType].length == 0"
           >
             <span>No proposal under discussion</span>
-          </div>
+          </v-row>
 
-          <div v-else></div>
+          <v-row v-else-if="proposals[proposalType]" class="overflow-y-auto">
+            <v-col v-for="(proposal, index) in proposals" :key="index">
+              <v-card>
+                <v-card-text> </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <v-row v-else>
+            <v-col
+              v-for="index in proposalTokens[proposalType].length"
+              :key="index"
+              cols="12"
+            >
+              <v-sheet color="transparent" class="pa-3">
+                <v-card flat outlined>
+                  <v-skeleton-loader type="article"></v-skeleton-loader>
+                </v-card>
+              </v-sheet>
+            </v-col>
+          </v-row>
         </v-tab-item>
       </v-tabs-items>
+    </v-col>
+
+    <v-col v-else :cols="$vuetify.breakpoint.smAndDown ? '12' : '8'">
+      <v-sheet color="transparent" class="pa-3">
+        <v-skeleton-loader type="article"></v-skeleton-loader>
+      </v-sheet>
     </v-col>
   </v-row>
 </template>
@@ -44,6 +70,7 @@ import Axios from "axios";
 
 @Component
 export default class HomeComponents extends Vue {
+  private tab = 0;
   private proposalTokens: Record<string, []> = {};
   private proposals: Record<string, []> = {};
   private proposalTypes: Record<number, string> = {
@@ -53,8 +80,6 @@ export default class HomeComponents extends Vue {
     3: "rejected",
     4: "abandoned"
   };
-
-  private tab = 0;
 
   @Watch("tab")
   fetchProposalFromToken() {
@@ -87,6 +112,8 @@ export default class HomeComponents extends Vue {
         .then(Response => {
           if (Response.status == 200) {
             console.log("proposal", Response.data);
+            this.proposals[proposalType] = Response.data;
+            this.$forceUpdate();
           }
         })
         .catch(error => {
