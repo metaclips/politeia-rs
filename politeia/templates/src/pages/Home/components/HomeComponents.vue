@@ -1,5 +1,5 @@
 <template>
-  <v-row no-gutters class="mx-8">
+  <v-row no-gutters class="mx-4">
     <v-col class="mb-10" cols="12">
       <h5 class="header">
         Public Proposals
@@ -8,7 +8,7 @@
 
     <v-col
       v-if="Object.keys(proposalTokens).length"
-      :cols="$vuetify.breakpoint.smAndDown ? '12' : '8'"
+      :cols="$vuetify.breakpoint.smAndDown ? '12' : '12'"
     >
       <v-tabs v-model="tab" align-with-title grow show-arrows>
         <v-tab>In Discussion [{{ proposalTokens["pre"].length }}]</v-tab>
@@ -29,22 +29,45 @@
             <span>No proposal under discussion</span>
           </v-row>
 
-          <v-row v-else-if="proposals[proposalType]" class="overflow-y-auto">
-            <v-col v-for="(proposal, index) in proposals" :key="index">
-              <v-card>
-                <v-card-text> </v-card-text>
+          <!-- Check if there are proposal to show for current tab. -->
+          <v-row
+            v-else-if="proposals[proposalType]"
+            class="overflow-y-auto mx-8"
+          >
+            <v-col
+              v-for="(proposal, propsalIndex) in proposals[proposalType]"
+              :key="propsalIndex"
+            >
+              <v-card flat outlined tile>
+                <v-card-title class="my-1" href="https://github.com/metaclips">
+                  {{ proposal.name }}
+                </v-card-title>
+
+                <v-card-subtitle>
+                  <a class="mr-4" href="https://github.com/metaclips">{{
+                    proposal.username
+                  }}</a>
+
+                  <span v-if="!$vuetify.breakpoint.smAndDown" class="mr-4"
+                    >published about {{ getDate(proposal.publishedat) }}</span
+                  >
+
+                  <span v-if="!$vuetify.breakpoint.smAndDown" class="mr-4"
+                    >edited about {{ getDate(proposal.timestamp) }}</span
+                  >
+                </v-card-subtitle>
               </v-card>
             </v-col>
           </v-row>
 
-          <v-row v-else>
+          <v-row class="mx-8" v-else>
             <v-col
               v-for="index in proposalTokens[proposalType].length"
               :key="index"
               cols="12"
             >
               <v-sheet color="transparent" class="pa-3">
-                <v-card flat outlined>
+                <v-card tile flat outlined>
                   <v-skeleton-loader type="article"></v-skeleton-loader>
                 </v-card>
               </v-sheet>
@@ -81,6 +104,38 @@ export default class HomeComponents extends Vue {
     4: "abandoned"
   };
 
+  public getDate(timestamp: number): string {
+    const date = new Date(timestamp * 1000);
+
+    const daysDifference = Math.floor(
+      (new Date().getTime() - timestamp) / 1000 / 60 / 60 / 24
+    );
+
+    console.log("Days diff", daysDifference, timestamp, new Date().getTime());
+
+    if (daysDifference < 31) {
+      return daysDifference > 1
+        ? daysDifference + " days ago"
+        : daysDifference + " day ago";
+    }
+
+    const years = date.getFullYear();
+    const months = date.getUTCMonth() + 1;
+
+    const yearElapsed = years - new Date().getFullYear();
+    const monthElapsed = new Date().getUTCMonth() + 1 - months;
+
+    if (yearElapsed == 0) {
+      return monthElapsed > 1
+        ? monthElapsed + " months ago"
+        : monthElapsed + " month ago";
+    }
+
+    return yearElapsed > 1
+      ? yearElapsed + " years ago"
+      : yearElapsed + " year ago";
+  }
+
   @Watch("tab")
   fetchProposalFromToken() {
     console.log("Tab is at", this.tab);
@@ -111,8 +166,8 @@ export default class HomeComponents extends Vue {
       )
         .then(Response => {
           if (Response.status == 200) {
-            console.log("proposal", Response.data);
-            this.proposals[proposalType] = Response.data;
+            this.proposals[proposalType] = Response.data.proposals;
+            console.log("proposal", proposalType, this.proposals[proposalType]);
             this.$forceUpdate();
           }
         })
@@ -143,5 +198,9 @@ export default class HomeComponents extends Vue {
 .header {
   font-size: xx-large;
   font-weight: 500;
+}
+
+a {
+  text-decoration: none;
 }
 </style>

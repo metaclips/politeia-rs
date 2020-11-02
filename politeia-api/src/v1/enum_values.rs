@@ -1,3 +1,15 @@
+/// Proposal state codes
+///
+/// PropStateUnvetted includes proposals with a status of:
+///   * PropStatusNotReviewed
+///   * PropStatusUnreviewedChanges
+///   * PropStatusCensored
+/// PropStateVetted includes proposals with a status of:
+///   * PropStatusPublic
+///   * PropStatusAbandoned
+///
+/// Proposal states correspond to the unvetted and vetted politeiad
+/// repositories.
 #[derive(serde::Deserialize, Debug)]
 pub enum ProposalState {
     Invalid,
@@ -30,6 +42,7 @@ impl Default for ProposalState {
     }
 }
 
+/// Proposal status codes.
 #[derive(serde::Deserialize, Debug)]
 pub enum ProposalStatus {
     Invalid,
