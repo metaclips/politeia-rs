@@ -8,7 +8,7 @@
 
     <v-col
       v-if="Object.keys(proposalTokens).length"
-      :cols="$vuetify.breakpoint.smAndDown ? '12' : '12'"
+      :cols="$vuetify.breakpoint.smAndDown ? '12' : '10'"
     >
       <v-tabs v-model="tab" align-with-title grow show-arrows>
         <v-tab>In Discussion [{{ proposalTokens["pre"].length }}]</v-tab>
@@ -38,24 +38,62 @@
               v-for="(proposal, propsalIndex) in proposals[proposalType]"
               :key="propsalIndex"
             >
-              <v-card flat outlined tile>
-                <v-card-title class="my-1" href="https://github.com/metaclips">
-                  {{ proposal.name }}
-                </v-card-title>
+              <v-card max-width="90vh" flat outlined tile>
+                <div class="mx-4 my-4">
+                  <v-card-title href="https://github.com/metaclips">
+                    {{ proposal.name }}
+                  </v-card-title>
 
-                <v-card-subtitle>
-                  <a class="mr-4" href="https://github.com/metaclips">{{
-                    proposal.username
-                  }}</a>
+                  <v-card-subtitle>
+                    <a class="mr-4" href="https://github.com/metaclips">{{
+                      proposal.username
+                    }}</a>
 
-                  <span v-if="!$vuetify.breakpoint.smAndDown" class="mr-4"
-                    >published about {{ getDate(proposal.publishedat) }}</span
-                  >
+                    <v-tooltip bottom>
+                      <template v-slot:activator="{ on, attrs }">
+                        <span
+                          v-if="!$vuetify.breakpoint.smAndDown"
+                          v-bind="attrs"
+                          v-on="on"
+                          class="mr-4"
+                          >published about
+                          {{
+                            moment.unix(proposal.publishedat).fromNow()
+                          }}</span
+                        >
+                      </template>
+                      <span>{{ new Date(proposal.publishedat * 1000) }}</span>
+                    </v-tooltip>
 
-                  <span v-if="!$vuetify.breakpoint.smAndDown" class="mr-4"
-                    >edited about {{ getDate(proposal.timestamp) }}</span
-                  >
-                </v-card-subtitle>
+                    <v-tooltip bottom>
+                      <template v-slot:activator="{ on, attrs }">
+                        <span
+                          v-if="!$vuetify.breakpoint.smAndDown"
+                          v-bind="attrs"
+                          v-on="on"
+                          class="mr-4"
+                          >edited about
+                          {{ moment.unix(proposal.timestamp).fromNow() }}</span
+                        >
+                      </template>
+                      <span>{{ new Date(proposal.timestamp * 1000) }}</span>
+                    </v-tooltip>
+
+                    <span v-if="!$vuetify.breakpoint.smAndDown" class="mr-4"
+                      >version {{ proposal.version }}</span
+                    >
+                  </v-card-subtitle>
+
+                  <v-card-actions>
+                    <template v-if="proposal.numcomments > 1">
+                      {{ proposal.numcomments }} comments
+                    </template>
+
+                    <template v-else
+                      >{{ proposal.numcomments }} comment</template
+                    >
+                  </v-card-actions>
+                </div>
               </v-card>
             </v-col>
           </v-row>
@@ -90,6 +128,7 @@
 
 import { Component, Vue, Watch } from "vue-property-decorator";
 import Axios from "axios";
+import moment from "moment";
 
 @Component
 export default class HomeComponents extends Vue {
@@ -103,38 +142,6 @@ export default class HomeComponents extends Vue {
     3: "rejected",
     4: "abandoned"
   };
-
-  public getDate(timestamp: number): string {
-    const date = new Date(timestamp * 1000);
-
-    const daysDifference = Math.floor(
-      (new Date().getTime() - timestamp) / 1000 / 60 / 60 / 24
-    );
-
-    console.log("Days diff", daysDifference, timestamp, new Date().getTime());
-
-    if (daysDifference < 31) {
-      return daysDifference > 1
-        ? daysDifference + " days ago"
-        : daysDifference + " day ago";
-    }
-
-    const years = date.getFullYear();
-    const months = date.getUTCMonth() + 1;
-
-    const yearElapsed = years - new Date().getFullYear();
-    const monthElapsed = new Date().getUTCMonth() + 1 - months;
-
-    if (yearElapsed == 0) {
-      return monthElapsed > 1
-        ? monthElapsed + " months ago"
-        : monthElapsed + " month ago";
-    }
-
-    return yearElapsed > 1
-      ? yearElapsed + " years ago"
-      : yearElapsed + " year ago";
-  }
 
   @Watch("tab")
   fetchProposalFromToken() {
