@@ -1,6 +1,6 @@
 use politeia_api::v1::types;
 
-#[derive(Default)]
+#[derive(Default, Eq, PartialEq, Clone)]
 pub struct Proposals {
     pub pre: types::ProposalsResult,
     pub abandoned: types::ProposalsResult,

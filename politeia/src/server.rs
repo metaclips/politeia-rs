@@ -1,3 +1,4 @@
+use super::model::Client;
 use super::types;
 use actix_cors::Cors;
 use actix_files::{Files as fs, NamedFile};
@@ -49,7 +50,7 @@ async fn index() -> impl Responder {
 
 #[get("/api/v1/fetchtokens")]
 async fn fetch_tokens() -> impl Responder {
-    let client = super::model::new().expect("Unable to create a new client");
+    let client = Client::new().expect("Unable to create a new client");
 
     match client.fetch_tokens().await {
         Ok(e) => match serde_json::to_string(&e) {
@@ -76,7 +77,7 @@ async fn fetch_tokens() -> impl Responder {
 
 #[post("/api/v1/fetchproposals")]
 async fn fetch_proposals(tokens: actix_web::web::Json<types::Tokens>) -> impl Responder {
-    let mut client = super::model::new().expect("Unable to create a new client");
+    let mut client = Client::new().expect("Unable to create a new client");
 
     if tokens.tokens.is_empty() {
         return "{}".to_string().with_status(StatusCode::OK);
