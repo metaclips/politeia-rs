@@ -12,9 +12,11 @@ pub struct Client {
 }
 
 const CSRF_TOKEN: &str = "X-CSRF-Token";
+const MAX_CSRF_EXPIRY_SECS: u64 = 20 * 60 * 60;
+const MAX_TIME_CACHE_UPDATE_SECS: u64 = 10 * 60;
 
 impl Client {
-    pub fn new() -> Result<Client, Box<dyn std::error::Error>> {
+    pub fn new() -> Result<Client, Box<dyn std::error::Error + Send + Sync>> {
         let req_client = reqwest::ClientBuilder::default()
             .connection_verbose(true)
             .cookie_store(true)
@@ -30,7 +32,10 @@ impl Client {
         Ok(client)
     }
 
-    async fn get_request(&self, url: String) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    async fn get_request(
+        &self,
+        url: String,
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         let response = self.client.get(&url).send().await?;
         match response.error_for_status() {
             Ok(res) => Ok(res.bytes().await?.to_vec()),
@@ -43,10 +48,11 @@ impl Client {
         &mut self,
         url: String,
         params: Vec<u8>,
-    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         if self.csrf_token == ""
-            || self.csrf_expiry.elapsed() > std::time::Duration::from_secs(20 * 60 * 60)
+            || self.csrf_expiry.elapsed() > std::time::Duration::from_secs(MAX_CSRF_EXPIRY_SECS)
         {
+            log::info!("Updating csrf.");
             self.version().await?;
             self.policy = self.fetch_policy().await?;
             self.csrf_expiry = std::time::Instant::now();
@@ -67,7 +73,7 @@ impl Client {
         }
     }
 
-    async fn version(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn version(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let url = format!(
             "{}{}",
             api::POLITEIA_HOST,
@@ -87,7 +93,9 @@ impl Client {
         Ok(())
     }
 
-    pub async fn fetch_policy(&self) -> Result<api::v1::types::Policy, Box<dyn std::error::Error>> {
+    pub async fn fetch_policy(
+        &self,
+    ) -> Result<api::v1::types::Policy, Box<dyn std::error::Error + Send + Sync>> {
         let url = format!(
             "{}{}",
             api::POLITEIA_HOST,
@@ -101,7 +109,8 @@ impl Client {
 
     pub async fn fetch_tokens(
         &self,
-    ) -> Result<politeia_api::v1::types::TokenInventory, Box<dyn std::error::Error>> {
+    ) -> Result<politeia_api::v1::types::TokenInventory, Box<dyn std::error::Error + Send + Sync>>
+    {
         let url = format!(
             "{}{}",
             api::POLITEIA_HOST,
@@ -109,19 +118,22 @@ impl Client {
         );
 
         let response = self.get_request(url).await?;
-        let policy: api::v1::types::TokenInventory = serde_json::from_slice(&response)?;
-        Ok(policy)
+        let tokens: api::v1::types::TokenInventory = serde_json::from_slice(&response)?;
+        Ok(tokens)
     }
 
     pub async fn fetch_batch_proposal(
         &mut self,
         tokens: Vec<String>,
-    ) -> Result<politeia_api::v1::types::ProposalsResult, Box<dyn std::error::Error>> {
+    ) -> Result<politeia_api::v1::types::ProposalsResult, Box<dyn std::error::Error + Send + Sync>>
+    {
         let url = format!(
             "{}{}",
             api::POLITEIA_HOST,
             api::v1::routes::REQUEST_POST_BATCH_PROPOSALS
         );
+
+        log::info!("Fetching batch proposal");
 
         let val = serde_json::json!({ "tokens": tokens });
         let params = serde_json::to_vec(&val)?;
@@ -135,7 +147,9 @@ impl Client {
     pub async fn fetch_all_proposals(
         &mut self,
         mut tokens: api::v1::types::TokenInventory,
-    ) -> Result<super::types::Proposals, Box<dyn std::error::Error>> {
+    ) -> Result<super::types::Proposals, Box<dyn std::error::Error + Send + Sync>> {
+        log::info!("Fetching all proposals");
+
         let mut proposals = super::types::Proposals::default();
 
         self.fetch_proposal(&mut tokens.pre, &mut proposals.pre)
@@ -160,7 +174,7 @@ impl Client {
         &mut self,
         tokens: &mut Vec<String>,
         proposals: &mut api::v1::types::ProposalsResult,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Fetch proposals also not exceeding max proposal list to fetch.
         while !tokens.is_empty() {
             let split_at = if (tokens.len() as i64 - self.policy.proposal_list_page_size as i64) < 0
@@ -184,18 +198,27 @@ impl Client {
     }
 }
 
-pub(crate) async fn _update_proposals(
+/// Update proposals at 10minute intervals.
+pub(crate) async fn update_proposals(
     tokens: Arc<RwLock<api::v1::types::TokenInventory>>,
+    policy: Arc<RwLock<api::v1::types::Policy>>,
     proposal_mapper: Arc<RwLock<HashMap<String, api::v1::types::Proposal>>>,
 ) {
+    log::trace!("Starting cache store updater.");
+
     let mut client = Client::new().unwrap();
 
     loop {
+        log::trace!("Updating cache store.");
         let new_tokens = match client.fetch_tokens().await {
             Ok(e) => e,
             Err(e) => {
                 log::error!("Error fetching proposal tokens, error: {}", e);
-                time::delay_for(time::Duration::from_secs(10 * 60)).await;
+                log::trace!(
+                    "Retrying update cache in {} seconds",
+                    MAX_TIME_CACHE_UPDATE_SECS
+                );
+                time::delay_for(time::Duration::from_secs(MAX_TIME_CACHE_UPDATE_SECS)).await;
                 continue;
             }
         };
@@ -212,22 +235,31 @@ pub(crate) async fn _update_proposals(
             Ok(e) => e,
             Err(e) => {
                 log::error!("Error fetching proposals, error: {}", e);
-                time::delay_for(time::Duration::from_secs(10 * 60)).await;
+                log::trace!(
+                    "Retrying update cache in {} seconds",
+                    MAX_TIME_CACHE_UPDATE_SECS
+                );
+                time::delay_for(time::Duration::from_secs(MAX_TIME_CACHE_UPDATE_SECS)).await;
                 continue;
             }
         };
 
-        let is_proposal_same = _proposals_is_same(new_proposals.clone(), &proposal_mapper).await;
+        let is_proposal_same = proposals_is_same(new_proposals.clone(), &proposal_mapper).await;
 
         if !is_proposal_same {
-            _set_proposals(new_proposals, &proposal_mapper).await;
+            set_proposals(new_proposals, &proposal_mapper).await;
         }
 
-        time::delay_for(time::Duration::from_secs(10 * 60)).await;
+        if client.policy != *policy.read().await {
+            *policy.write().await = client.policy.clone();
+        }
+
+        log::trace!("Updating cache in {} seconds", MAX_TIME_CACHE_UPDATE_SECS);
+        time::delay_for(time::Duration::from_secs(MAX_TIME_CACHE_UPDATE_SECS)).await;
     }
 }
 
-async fn _proposals_is_same(
+async fn proposals_is_same(
     new_proposal: super::types::Proposals,
     proposal_mapper: &Arc<RwLock<HashMap<String, api::v1::types::Proposal>>>,
 ) -> bool {
@@ -280,7 +312,7 @@ async fn _proposals_is_same(
     true
 }
 
-async fn _set_proposals(
+async fn set_proposals(
     new_proposal: super::types::Proposals,
     proposal_mapper: &Arc<RwLock<HashMap<String, api::v1::types::Proposal>>>,
 ) {
