@@ -14,7 +14,13 @@
     </v-app-bar>
 
     <v-main>
-      <HomeComponents />
+      <v-container fluid>
+        <HomeComponents
+          id="scroll-target"
+          style="max-height: 90vh"
+          class="overflow-y-auto"
+        />
+      </v-container>
     </v-main>
   </v-app>
 </template>
@@ -38,5 +44,8 @@ export default class App extends Vue {}
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
   margin-top: 20px;
+}
+html {
+  overflow-y: hidden;
 }
 </style>
